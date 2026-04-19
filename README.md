@@ -1,100 +1,189 @@
-# Smartphone Widget – Calendaria Integration
+# Smartphone Calendar Plus
 
-A Foundry VTT v13 module that fully integrates [Calendaria](https://github.com/Sayshal/Calendaria) with the [Smartphone Widget](https://foundryvtt.com/packages/smartphone-widget), replacing the built-in calendar app and syncing time, weather, and notes between the two systems.
+A feature-rich calendar replacement for the [Smartphone Widget Calendar](https://foundryvtt.com/packages/smartphone-widget) module for FoundryVTT. 
+
+Optionally integrates with [Calendaria](https://github.com/Sayshal/Calendaria) for fantasy calendar support, syncing time, date, weather, and notes between systems.
+
+Works as a standalone Gregorian calendar without Calendaria installed.
 
 ## Requirements
 
 - **Foundry VTT** v13+
-- **Smartphone Widget** module (active)
-- **Calendaria** module (active)
+- **Smartphone Widget** module (required)
+- **Calendaria** module (recommended, enables fantasy calendars and full note integration)
 
 ## Installation
 
-1. Download or clone this repository into your Foundry `Data/modules/` directory.
-2. The folder name **must** be `calendaria-phone-app` (matching the module ID).
+1. Download or clone this repository into your Foundry `https://github.com/evernessince/smartphone-calendar-plus` directory.
+2. The folder name **must** be `calendaria-phone-app`.
 3. Enable the module in your world's Module Management screen.
 
-```
-Data/modules/calendaria-phone-app/
-├── module.json
-├── lang/
-│   └── en.json
-└── scripts/
-    ├── main.mjs
-    └── CalendariaPhoneApp.mjs
-```
+## Overview
+
+- Time, date, and Calendar now syncs with Calendaria (including custom months, weekdays, and day lengths) **Note:  Due to horizontal space limiations, having a custom calendaria calendar with more than 9 weekdays will require the use of a horizontal scrollbar in order to keep it functional
+**Note 2:  If the GM updates the number of days in a week or number of months in a year, connector players will have to reload in order to see those changes.  This is due to Calendaria not propagating these changes when the GM makes them.
+- Syncs weather data from Calendaria to the weather app and converts secondary weather data (humidity, wind speed, feels like temp) from Calendaria to the Weather App.  Uses real weather modeling to best predicit values not explicitly provided by Calendaria.
+- Calendaria notes now display in the calendar app.
+- Overhauls the UI, UX, and adds pinning, an all notes screen, settings menu and more.
 
 ## Features
 
-### Calendar App Replacement
+### Calendar
 
-The module registers a new calendar app under the same `"calendar"` ID used by the built-in Smartphone Widget calendar, fully replacing it. The new app is powered entirely by Calendaria's API.
+- Monthly grid view pulled from your active calendar system (Gregorian or any Calendaria-supported calendar)
+- Colored dot indicators: blue for regular events, purple for recurring occurrences, both when a day has both types
+- Click any day to see its events in the detail panel below the grid
+- Navigate months with arrow buttons or the scroll wheel on the month/year fields
+- Click the month name to pick from a dropdown; click the year to type a new one
+- Today button jumps back to the current in-world date
+- Keyboard arrow keys move the selected date (left/right by day, up/down by week)
 
-- **Monthly grid view** with day cells, weekday headers, and month/year navigation — all pulled from Calendaria's active calendar configuration (supports any calendar system, not just Gregorian).
-- **Today button** jumps back to the current in-world date.
-- **Date picker** overlay for quick year/month selection.
-- **Event dot indicators** on days that have Calendaria notes.
-- **Selected day detail panel** showing all visible notes for that date.
+### Events and Notes
 
-### Full Calendaria Notes Integration
+- **View** Calendaria notes and phone-native events side by side, with title, time, color, category icon, and expandable content preview
+- **Create** events from the phone with title, start/end time (or all-day), memo, color picker (8 presets), and category dropdown
+- **Edit** existing phone events inline
+- **Delete** events via right-click or an optional delete button (configurable in settings)
+- **Pin** any event or Calendaria note with the thumbtack button; pinned items appear in the dedicated Pinned tab
+- **Open in Calendaria** button launches the native Calendaria note editor for deeper editing
+- **Recurring events** display in their own tab with next occurrence dates and an "Ended" section for completed series
+- GM-only notes are automatically hidden from players
 
-Notes are read, created, and deleted through Calendaria's journal-based notes system — not a separate settings store. Everything stays in sync with Calendaria's BigCal, MiniCal, and HUD.
+### All Notes View
 
-- **View notes** for any date with title, time, color, and icon.
-- **Create notes** from the phone with title, time (or all-day), memo, color, category, and GM-only toggle.
-- **Delete notes** with a confirmation dialog (uses Foundry's `Dialog.confirm`).
-- **Open notes in Calendaria** via a quick-link button that launches Calendaria's native note editor.
-- **GM-only note filtering** — notes marked as GM-only in Calendaria are never shown to players, either in the day detail view or as dot indicators on the grid. The "GM Only" checkbox in the create form only appears for GMs.
-- **Realtime note sync** — creating, editing, or deleting a note in Calendaria immediately updates the phone's calendar view via `calendaria.noteCreated`, `calendaria.noteDeleted`, and `calendaria.noteUpdated` hooks.
-- **Category support** — the create form shows all categories defined in Calendaria (Holiday, Quest, Session, Combat, etc.) as a dropdown.
+Four-tab interface accessible from the list icon in the header:
 
-### GM Time Controls
+- **Events** — all non-recurring events across all dates, searchable by title
+- **Recurring** — all recurring Calendaria events with next occurrence
+- **Pinned** — all pinned events and notes in one place, with Unpin All button
+- **Settings** — in-app preferences (no need to leave the phone)
 
-When logged in as GM, the calendar app shows collapsible control panels:
+### Date Format Customization
 
-- **Time-of-day shortcuts** — Morning, Midday, Evening, Midnight buttons that advance time to the next occurrence of that hour (uses `CALENDARIA.api.advanceTimeToPreset` with manual fallback).
-- **Set date to selected** — jumps the world time to whatever date the GM has selected on the grid, preserving the current time-of-day.
-- **Time manipulation** — advance or rewind by ±1 or ±5 of any unit (minutes, hours, days, months, years) via `CALENDARIA.api.advanceTime`.
+Configure how the date header displays using tokens in the Settings tab:
 
-### Status Bar Clock Sync
+| Token | Output | Example |
+|-------|--------|---------|
+| `{Y}` | Full year | 1970 |
+| `{y}` | 2-digit year | 70 |
+| `{M}` | Full month name | January |
+| `{m}` | Month abbreviation | Jan |
+| `{m#}` | Numeric month | 01 |
+| `{D}` | Full weekday name | Thursday |
+| `{d}` | Weekday abbreviation | Thu |
+| `{#}` | Day of month | 3 |
+| `{##}` | Ordinal day | 3rd |
 
-The Smartphone Widget's built-in `SmartphoneTime` class doesn't natively support Calendaria. This module monkey-patches three static methods to bridge the gap:
+Combine tokens with any literal text: `{D} {M} {##}, {Y}` produces "Thursday January 3rd, 1970".
 
-- **`SmartphoneTime.now()`** — returns `game.time.worldTime * 1000` (which Calendaria drives) instead of reading from the internal settings store.
-- **`SmartphoneTime.getDateObject(timestamp)`** — converts timestamps via `CALENDARIA.api.getCurrentDateTime()` and `CALENDARIA.api.timestampToDate()` instead of using `game.time.calendar.timeToComponents()` (which has yearZero offset mismatches).
-- **`SmartphoneTime.getCalendarConfig()`** — returns month and weekday names/abbreviations from Calendaria's active calendar.
+GMs can lock the date format for all players using the padlock icon.
 
-The phone's `WidgetClock` doesn't listen to the `smartphoneTimeChanged` hook, so the module also directly calls `updateClockDisplay()` and `handleTimeUpdate()` on the widget instance whenever Calendaria fires `calendaria.dateTimeChange` or the core `updateWorldTime` hook fires. This keeps the status bar clock updating in realtime as time advances.
+### GM Controls (Standalone Mode)
 
-A `calendaria.ready` hook listener force-refreshes both the clock and the calendar app when Calendaria finishes initializing, solving the startup timing issue where the phone would show `year: 0` if our module loaded before Calendaria was ready.
+When running without Calendaria, GMs get collapsible control panels:
 
-### Weather Sync
+- **Time shortcuts** — Morning, Midday, Evening, Midnight (advances to the next occurrence)
+- **Set date** — jump world time to the selected grid date
+- **Lighting FX toggle** — enable/disable TimeOfDayLighting for the active scene
+- **Time manipulation** — advance or rewind by 1 or 5 of any unit (minutes, hours, days, months, years)
 
-Calendaria's weather system is automatically synced to the Smartphone Widget's weather app. The GM client writes to the `weather-data` setting; all clients read it.
+### Sorting and Display
 
-**Data mapping:**
+- Sort events by time or category, ascending or descending
+- Compact mode toggle reduces card spacing
+- Action buttons (pin, edit, delete, open) can be set to always visible or hover-only
+- Escape key behavior is configurable (close forms/return home, or fall through to Foundry)
 
-| Calendaria Source | Phone Field | Conversion |
-|---|---|---|
-| `getCurrentWeather().temperature` | `temp`, `high`, `low` | °C → °F (if unit is F). High/low estimated as ±4°C from current. |
-| `getCurrentWeather().label` | `condition` | Localized via `game.i18n.localize()` — works for all Calendaria weather types including custom ones. |
-| `getCurrentWeather().icon` | `icon` | Normalized from `"fa-sun"` to `"fas fa-sun"`. |
-| `getCurrentWeather().wind.speed` | `wind` | Integer 0-5 converted to m/s (see Wind Speed Conversion below). |
-| `getCurrentWeather().precipitation.intensity` | `precip` | 0-1 float → 0-100 percentage. |
-| Climate zone + season + precipitation | `humidity` | Estimated (see Humidity Estimation below). |
-| `isDaytime()` | `isNight` | Boolean inversion. |
-| `game.scenes.active.name` | `location` | Active scene name. |
+### Themes
 
-**Sync triggers:** `calendaria.weatherChange`, `calendaria.dateTimeChange`, `calendaria.sunrise`, `calendaria.sunset`. Debounced at 500ms to prevent flooding settings on rapid time ticks. Only writes when data has actually changed (JSON hash comparison).
+- **Default** — clean blue accent
+- **Golden Squares** — gold/yellow gradient accents, Roboto Slab headings, rounded square buttons, enhanced shadows
 
-The weather source is locked to `"calendaria"` on startup so the phone's native weather controls don't overwrite Calendaria data.
+### Weather Sync (with Calendaria)
 
-### Wind Speed Conversion
+Automatically syncs Calendaria's weather to the Smartphone Widget's weather app:
 
-Calendaria uses an integer 0-5 scale. The module converts to realistic m/s values:
+- Temperature, condition, icon, wind speed, precipitation
+- Humidity estimated from climate zone, season, and conditions
+- "Feels like" temperature uses real meteorological formulas (NWS Wind Chill, Rothfusz Heat Index)
+- Wind displayed in mph
+
+### Clock Sync (with Calendaria)
+
+The phone's status bar clock stays in sync with Calendaria's world time through patched SmartphoneTime methods. Calendar structure (months, weekdays, leap years) is also synced so the phone understands your custom calendar.
+
+## Changelog
+
+### v0.2.0
+
+#### New Features
+- Ordinal day token `{##}` for date format (displays "1st", "2nd", "3rd", etc.)
+- Date format GM padlock — GMs can lock the date format for all players; locked format propagates automatically when changed
+- Per-phone pin storage — pinned events and Calendaria notes are now stored per phone and visible to all clients, not just the pinning player
+- Custom category editor in standalone mode (Settings tab)
+- Golden Squares theme
+
+#### Changes
+- Switched from bulk event writes to individual socket-based writes using the original module's `updateCalendarEvent` and `deleteCalendarEvent` handlers for better atomicity and free cross-client sync
+- Recurring event dots are now purple-only on days that have no other events; blue dot only appears for non-recurring events
+- Calendar hooks (noteCreated, noteDeleted, etc.) are registered once and cleaned up on destroy instead of every render, eliminating console spam
+- Font declarations updated from woff2 to TTF format
+
+#### Fixes
+- Fixed text color defaulting to the Foundry theme's light color instead of black across both Chrome and Firefox
+- Fixed Firefox form elements (inputs, selects, buttons, labels) not inheriting black text due to CSS specificity issues with Foundry themes
+- Fixed Firefox heading (h3/h4) color being overridden by theme styles
+- Fixed Chrome text appearing too light — base font weight bumped to 500
+- Fixed checkbox accent color inheriting from the Foundry theme instead of using the calendar's blue accent
+- Fixed category dropdown text color being overridden in Firefox
+- Fixed date format trimming spaces between tokens due to `inline-flex` collapsing whitespace-only text nodes — separators are now wrapped in spans with `white-space: pre`
+- Fixed GM date format changes not propagating to clients when the padlock is locked
+- Fixed month and year field sizing differing between Firefox and Chrome — replaced `field-sizing: content` with JS-based probe sizing for consistent cross-browser rendering
+- Fixed non-GM players unable to pin/unpin Calendaria notes after the switch to world-scoped storage — added socket relay through the active GM
+- Fixed Calendaria stopwatch getting stuck in a running state on session load
+
+## Technical Details
+
+### Architecture
+
+```
+main.mjs
+├── App registration (setup hook)
+├── Settings registration (setup hook)
+├── Socket listener for non-GM pin writes (setup hook)
+├── Stopwatch reset (ready hook, GM only)
+├── SmartphoneTime patches (now, getDateObject, getCalendarConfig)
+├── Calendar structure sync (months, weekdays, leap rules)
+├── Realtime clock bridge (Calendaria hooks → WidgetClock)
+├── Weather sync (Calendaria → phone weather-data, debounced 500ms)
+├── Weather source lock
+└── WeatherApp render patch (wind mph + feels-like formula)
+
+CalendariaPhoneApp.mjs (extends BaseApp)
+├── Lazy date initialization
+├── Hook management (register once, clean up on destroy)
+├── Rendering (calendar grid, day info, notes, event form, pinned view)
+├── Listener management (split into focused methods)
+├── Note CRUD via socket (executeAsGM for cross-client sync)
+├── Per-phone pin storage (world-scoped, socket relay for non-GMs)
+├── GM time controls (shortcuts, advance, set date)
+└── Keyboard navigation (arrow keys, escape)
+```
+
+### Event Storage
+
+Phone-native events are stored in the `smartphone-widget` module's `calendar-events` world setting, keyed by phone ID and zero-padded date strings (`YYYY-MM-DD`). All writes go through the original module's socket handlers (`updateCalendarEvent`, `deleteCalendarEvent`) which call `executeAsGM` for permission and `executeForEveryone("calendarUpdated")` for sync.
+
+### Pin Storage
+
+Calendaria note pins are stored in the `calPinnedNotes` world setting as a JSON object keyed by phone ID: `{ "phoneId": ["noteId1", "noteId2"] }`. Non-GM clients emit a socket message to the active GM for writes. An optimistic local override ensures the UI updates immediately while the GM processes the write.
+
+### Weather Calculations
+
+**Wind speed conversion** (Calendaria level → m/s):
 
 | Level | Label | m/s | Real-World Equivalent |
-|---|---|---|---|
+|-------|-------|-----|----------------------|
 | 0 | Calm | 1 | Smoke rises vertically |
 | 1 | Light | 3 | Leaves rustle |
 | 2 | Moderate | 8 | Small branches move |
@@ -102,86 +191,32 @@ Calendaria uses an integer 0-5 scale. The module converts to realistic m/s value
 | 4 | Severe | 25 | Structural damage possible |
 | 5 | Extreme | 40 | Hurricane / tornado force |
 
-The phone's weather app display is patched to show wind in **mph** (converted from the stored m/s value).
+**Humidity estimation** layers four factors:
 
-### Humidity Estimation
+1. Climate zone base (Tropical 80%, Subtropical 70%, Temperate 60%, Subarctic 55%, Arctic 50%, Polar 45%, Arid 20%)
+2. Seasonal modifier (Spring/Autumn +5%, Summer -5%, Winter +0%)
+3. Precipitation boost (Drizzle +10%, Rain +20%, Downpour +30%, Thunderstorm +25%, Fog +25%, etc.)
+4. Environmental adjustments (high wind -5%, extreme cold +5%, hot arid -10%)
 
-Calendaria doesn't provide humidity data. The module estimates it from four layered factors:
+Result clamped to 5-99%.
 
-1. **Climate zone base** — from `getActiveCalendar().weather.activeZone`:
-   - Tropical: 80%, Subtropical: 70%, Temperate: 60%, Subarctic: 55%, Arctic: 50%, Polar: 45%, Arid: 20%
-
-2. **Seasonal modifier** — from `getCurrentSeason().seasonalType`:
-   - Spring/Autumn: +5%, Summer: -5%, Winter: +0%
-
-3. **Precipitation boost** — from `precipitation.type` and `precipitation.intensity`:
-   - Drizzle: +10%, Rain: +20%, Downpour: +30%, Thunderstorm: +25%, Fog: +25%, Mist: +20%, Snow/Sleet: +10-15%, Blizzard: +20%
-   - Plus intensity scaling: 0-1 → 0-15% additional
-
-4. **Environmental adjustments**:
-   - High wind (level ≥3): -5%, Extreme wind (level 5): additional -5%
-   - Arid + very hot (>35°C): -10%
-   - Deep cold (<-10°C): +5%
-
-Result is clamped to 5-99%.
-
-### "Feels Like" Temperature
-
-The built-in weather app calculates "feels like" as `temp - 1` regardless of conditions. This module patches it with real meteorological formulas:
+**Feels-like temperature**:
 
 | Condition | Formula |
-|---|---|
-| **Cold + windy** (≤50°F, wind >3 mph) | NWS Wind Chill Index |
-| **Hot + humid** (≥80°F, humidity ≥40%) | Rothfusz Heat Index with NWS adjustments |
-| **Mild range** (50-80°F) | Wind cooling with linear taper (strongest at 50°F, fades by 90°F) + humidity warming above 65°F |
+|-----------|---------|
+| Cold + windy (≤50°F, wind >3 mph) | NWS Wind Chill Index |
+| Hot + humid (≥80°F, humidity ≥40%) | Rothfusz Heat Index with NWS adjustments |
+| Mild range (50-80°F) | Wind cooling with linear taper + humidity warming |
 
-Examples at 80% humidity:
+### Cross-Browser Compatability
 
-| Temp | Wind | Feels Like | Effect |
-|---|---|---|---|
-| 70°F | 56 mph (severe) | 67°F | Wind cooling in mild range |
-| 45°F | 31 mph (strong) | 35°F | NWS wind chill |
-| 85°F | 8 mph (light) | 95°F | Heat index from humidity |
-| 60°F | 0 mph (calm) | 60°F | No adjustment |
+The module targets both Chrome and Firefox with a unified base `font-weight: 500`. All calendar text defaults to black via `.calendar-app.smcal-app` at specificity (0,2,0), with `:where()` for form element inheritance so intentional color overrides (save button white, delete button red) still win. Checkbox accents override the theme's `--color-accent` / `--check-color` variables with the calendar's blue accent.
 
-### Stopwatch Auto-Reset
-
-If Calendaria's stopwatch is stuck in a `running: true` state on session load, the module force-resets it by writing a clean state to the `calendaria.stopwatchState` setting and calling `hideStopwatch()`.
-
-### Smart Date Tracking
-
-The calendar app doesn't aggressively override user navigation:
-
-- If the user manually selects a day, navigates months, or picks a date, their selection is preserved even as world time advances.
-- The "Today" button clears the manual selection and re-enables auto-follow.
-- The app lazily initializes its date on first render (not in the constructor) to avoid reading stale data before Calendaria is ready.
+Firefox enhanced tracing protection blocks external font requests so this module integrates them to ensure consistent styling across browsers.
 
 ### Security
 
-- All user-provided strings (note titles, IDs, category labels, month names) are HTML-escaped before template insertion to prevent XSS.
-- Note content sent to `createNote` is also escaped.
-- GM-only notes are filtered client-side as a defense-in-depth measure on top of whatever Calendaria does server-side.
-
-## Architecture
-
-```
-main.mjs
-├── App registration (setup hook)
-├── Stopwatch reset (ready hook, GM only)
-├── SmartphoneTime patches (now, getDateObject, getCalendarConfig)
-├── Realtime clock bridge (hook → WidgetClock.updateClockDisplay)
-├── Weather sync (Calendaria → phone weather-data, debounced)
-├── Weather source lock
-└── WeatherApp render patch (wind mph + feels-like)
-
-CalendariaPhoneApp.mjs (extends BaseApp)
-├── Lazy date initialization (_ensureCurrentDate)
-├── Hook management (register/unregister with safe cleanup)
-├── Rendering (calendar view, grid, day info, notes, event form, date picker, GM controls)
-├── Listener management (split into 5 focused methods)
-├── Note CRUD (create, delete, open in Calendaria)
-└── GM time controls (shortcuts, advance, set date)
-```
+All user-provided strings (note titles, category labels, month names) are HTML-escaped before template insertion. GM-only notes are filtered client-side as defense-in-depth.
 
 ## License
 
