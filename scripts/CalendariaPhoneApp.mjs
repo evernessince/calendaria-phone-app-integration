@@ -1276,7 +1276,7 @@ export class CalendariaPhoneApp extends BaseApp {
                         <input type="number" id="smcal-hour" value="${h}" min="0" max="${getHoursPerDay()-1}" class="smcal-time-in">
                         <span>:</span>
                         <input type="number" id="smcal-minute" value="${String(m).padStart(2,'0')}" min="0" max="${getMinutesPerHour()-1}" class="smcal-time-in">
-                        <label class="smcal-fl" style="margin-left:4px">${loc(`${I18N}.endTime`,'End')}:</label>
+                        <label class="smcal-fl" style="margin-left:6px">${loc(`${I18N}.endTime`,'End')}:</label>
                         <input type="number" id="smcal-end-hour" value="${eH}" min="0" max="${getHoursPerDay()-1}" class="smcal-time-in" placeholder="--">
                         <span>:</span>
                         <input type="number" id="smcal-end-minute" value="${eM !== '' ? String(eM).padStart(2,'0') : ''}" min="0" max="${getMinutesPerHour()-1}" class="smcal-time-in" placeholder="--">
