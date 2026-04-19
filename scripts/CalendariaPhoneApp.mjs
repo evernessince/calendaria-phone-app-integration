@@ -722,7 +722,7 @@ export class CalendariaPhoneApp extends BaseApp {
         try { wIdx = cApi()?.dayOfWeek({ year, month, day }) ?? 0; } catch {}
         const wd = getWeekdays()[wIdx] ?? {};
         const wdLong  = wd.name || `Day ${wIdx + 1}`;
-        const wdShort = wd.abbreviation || (wd.name ? wd.name.slice(0, 3) : `D${wIdx + 1}`);
+        const wdShort = (wd.name ? wd.name.slice(0, 3) : wd.abbreviation) || `D${wIdx + 1}`;
 
         const monthSelect = (style) => {
             const opts = getMonths().map((m, i) => {
