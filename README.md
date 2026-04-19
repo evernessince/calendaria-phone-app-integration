@@ -32,6 +32,7 @@ As this is intended to replace the default Calendar app, I will list new feature
 - Added the ability to pin notes.
 - Added an all notes screen that has tabs for all notes, recurring events, and pinned notes / events.
 - Added a settings tab to the all notes screen.
+- Events now have an end time in addition to a start time.  This field is optional.
 - Past events on the current day appear grayed out.
 - Visual ticks to indicate events.  Blue for regular events and purple for recurring events.
 - Right clicking on a date as GM sets that day as the current day.
