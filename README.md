@@ -18,7 +18,6 @@ Works as a standalone Gregorian calendar without Calendaria installed.
 
 ## Features
 
-<img width="358" height="782" alt="{1EC0F318-3F85-408D-AD86-9B67B28E69BA}" src="https://github.com/user-attachments/assets/db996edb-dd06-4a4d-a239-b97dbc833f4f" />
 <img width="367" height="735" alt="{07317EC3-33F1-4663-AD3D-3A1CF885B554}" src="https://github.com/user-attachments/assets/0c828866-11fa-4462-8220-ca26976e762b" />
 <img width="367" height="731" alt="{9AF5AA76-9557-442F-B6F9-E01423D6597C}" src="https://github.com/user-attachments/assets/7d301cd8-bbcd-4b83-983f-fe39cad18019" />
 
