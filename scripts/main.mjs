@@ -14,6 +14,10 @@
 import { CalendariaPhoneApp } from './CalendariaPhoneApp.mjs';
 
 const MODULE_ID = 'calendaria-phone-app';
+const DEFAULT_COLOR = '#4a9eff';
+
+/** Module-level reference to weather sync — set in section 4, called in section 6. */
+let _syncWeatherNow = null;
 
 /* ================================================================== */
 /*  Widget instance helper (cached)                                    */
@@ -83,16 +87,213 @@ Hooks.once('setup', () => {
         defaultInstalled: true
     });
 
-    console.log(`${MODULE_ID} | Calendaria calendar app registered.`);
+    game.keybindings.register(MODULE_ID, 'calNavLeft', {
+        name: 'Calendar: Move Left',
+        hint: 'Move the selected date left by one day (only when phone is focused).',
+        editable: [{ key: 'ArrowLeft' }],
+        onDown: () => CalendariaPhoneApp._handleKeybind('left'),
+        precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY
+    });
+    game.keybindings.register(MODULE_ID, 'calNavRight', {
+        name: 'Calendar: Move Right',
+        hint: 'Move the selected date right by one day (only when phone is focused).',
+        editable: [{ key: 'ArrowRight' }],
+        onDown: () => CalendariaPhoneApp._handleKeybind('right'),
+        precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY
+    });
+    game.keybindings.register(MODULE_ID, 'calNavUp', {
+        name: 'Calendar: Move Up',
+        hint: 'Move the selected date up by one week (only when phone is focused).',
+        editable: [{ key: 'ArrowUp' }],
+        onDown: () => CalendariaPhoneApp._handleKeybind('up'),
+        precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY
+    });
+    game.keybindings.register(MODULE_ID, 'calNavDown', {
+        name: 'Calendar: Move Down',
+        hint: 'Move the selected date down by one week (only when phone is focused).',
+        editable: [{ key: 'ArrowDown' }],
+        onDown: () => CalendariaPhoneApp._handleKeybind('down'),
+        precedence: CONST.KEYBINDING_PRECEDENCE.PRIORITY
+    });
+
+    // User-scoped (per-client) preferences — each player has their own values
+    // and can change them without GM permission. Only GM time controls remain
+    // GM-exclusive (enforced by `game.user.isGM` gating in the app itself).
+    game.settings.register(MODULE_ID, 'calPinnedNotes', {
+        scope: 'world', config: false, type: String, default: '{}',
+        onChange: () => {
+            CalendariaPhoneApp._clearPinOverride();
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') inst.render();
+        }
+    });
+
+    game.socket.on(`module.${MODULE_ID}`, async (data) => {
+        if (data.action === 'setCalPins' && game.user === game.users.activeGM) {
+            try {
+                const raw = game.settings.get(MODULE_ID, 'calPinnedNotes') || '{}';
+                const all = (() => { try { const v = JSON.parse(raw); return (typeof v === 'object' && v !== null && !Array.isArray(v)) ? v : {}; } catch { return {}; } })();
+                if (data.arr.length) all[data.pid] = data.arr; else delete all[data.pid];
+                await game.settings.set(MODULE_ID, 'calPinnedNotes', JSON.stringify(all));
+            } catch {}
+        }
+    });
+
+    game.settings.register(MODULE_ID, 'sortMode', {
+        scope: 'client', config: false, type: String, default: 'time'
+    });
+
+    game.settings.register(MODULE_ID, 'sortAsc', {
+        scope: 'client', config: false, type: Boolean, default: true
+    });
+
+    game.settings.register(MODULE_ID, 'compact', {
+        scope: 'client', config: false, type: Boolean, default: true
+    });
+
+    game.settings.register(MODULE_ID, 'calendarTheme', {
+        name: 'Calendar App Theme',
+        scope: 'client',
+        config: false,
+        type: String,
+        default: 'default',
+        onChange: async (value) => {
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') {
+                inst._applyTheme(value);
+            }
+        }
+    });
+
+    // Settings managed in-app via the Settings tab on the All Notes screen.
+    // Hidden from the Foundry settings menu (config: false).
+    game.settings.register(MODULE_ID, 'deleteMode', {
+        scope: 'client', config: false, type: String, default: 'right-click',
+        onChange: () => {
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') inst.render();
+        }
+    });
+
+    game.settings.register(MODULE_ID, 'actionButtonsVisibility', {
+        scope: 'client', config: false, type: String, default: 'always',
+        onChange: () => {
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') inst.render();
+        }
+    });
+
+    game.settings.register(MODULE_ID, 'dateFormat', {
+        scope: 'client', config: false, type: String, default: '{Y}, {M}',
+        onChange: () => {
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') inst.render();
+        }
+    });
+
+    game.settings.register(MODULE_ID, 'escapeGoesBack', {
+        scope: 'client', config: false, type: Boolean, default: true,
+        onChange: () => {
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') inst.render();
+        }
+    });
+
+    game.settings.register(MODULE_ID, 'customCategories', {
+        scope: 'client', config: false, type: String, default: '[]',
+        onChange: () => {
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') inst.render();
+        }
+    });
+
+    // World-scoped GM override: when enabled, every non-GM player's phone gets
+    // the persistent home button (overrides their per-client preference which
+    // is off by default in smartphone-widget).
+    game.settings.register(MODULE_ID, 'forcePlayerHomeButton', {
+        scope: 'world', config: false, type: Boolean, default: false,
+        onChange: () => _applyPlayerHomeButton()
+    });
+
+    // World-scoped GM override for the calendar date format.  When non-empty,
+    // all players use this format instead of their own client preference.
+    game.settings.register(MODULE_ID, 'forceDateFormat', {
+        scope: 'world', config: false, type: String, default: '',
+        onChange: () => {
+            const inst = CalendariaPhoneApp._activeInstance;
+            if (inst?.element && inst.widget.currentApp === 'calendar') inst.render();
+        }
+    });
+
+    console.log(`${MODULE_ID} | Calendar app registered.`);
 });
+
+/* ================================================================== */
+/*  Player home-button helper                                          */
+/* ================================================================== */
+
+/**
+ * Applies the `show-persistent-home` class to the active smartphone frame
+ * for non-GM players when the world-scoped `forcePlayerHomeButton` setting
+ * is enabled. GMs keep their own per-client preference untouched.
+ * Called on setting change and after each widget render.
+ */
+function _applyPlayerHomeButton() {
+    if (game.user.isGM) return;
+    let enabled = false;
+    try { enabled = !!game.settings.get(MODULE_ID, 'forcePlayerHomeButton'); } catch {}
+    if (!enabled) return;
+    const frame = document.querySelector('.smartphone-frame');
+    if (frame) frame.classList.add('show-persistent-home');
+}
 
 /* ================================================================== */
 /*  Main initialization (ready hook)                                   */
 /* ================================================================== */
 
 Hooks.once('ready', async () => {
+    // One-time storage migration: pad legacy date keys (e.g. `1970-6-2` → `1970-06-02`)
+    // so the lexicographic sort stays correct. Runs GM-side only.
+    if (game.user.isGM) {
+        try {
+            const data = game.settings.get('smartphone-widget', 'calendar-events') || {};
+            let anyChange = false;
+            for (const [pid, entries] of Object.entries(data)) {
+                if (!Array.isArray(entries)) continue;
+                let phoneChanged = false;
+                const migrated = entries.map(([k, v]) => {
+                    const parts = k.split('-');
+                    if (parts.length !== 3) return [k, v];
+                    const [y, m, d] = parts;
+                    // Skip year-0 orphaned entries (legacy holiday seeds)
+                    if (y === '0') return [k, v];
+                    const newKey = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    if (newKey !== k) phoneChanged = true;
+                    return [newKey, v];
+                });
+                if (!phoneChanged) continue;
+                // Dedupe on the new key (in case both padded and unpadded existed)
+                const dedup = new Map();
+                for (const [k, v] of migrated) {
+                    if (dedup.has(k)) dedup.get(k).push(...v);
+                    else dedup.set(k, [...v]);
+                }
+                data[pid] = Array.from(dedup.entries());
+                anyChange = true;
+            }
+            if (anyChange) {
+                await game.settings.set('smartphone-widget', 'calendar-events', data);
+                console.log(`${MODULE_ID} | Migrated legacy unpadded date keys.`);
+            }
+        } catch (e) {
+            console.warn(`${MODULE_ID} | Date-key migration failed:`, e);
+        }
+    }
+
     if (typeof CALENDARIA === 'undefined' || !CALENDARIA?.api) {
-        console.error(`${MODULE_ID} | Calendaria not found, skipping patches.`);
+        // Calendaria is optional. Without it the calendar uses a Gregorian fallback
+        // driven by Foundry's worldTime and shows only phone-native events.
+        console.log(`${MODULE_ID} | Calendaria not detected — running in standalone mode.`);
         return;
     }
 
@@ -136,7 +337,7 @@ Hooks.once('ready', async () => {
         const originalNow = ST.now.bind(ST);
         ST.now = function () {
             if (typeof CALENDARIA !== 'undefined' && CALENDARIA?.api) {
-                return game.time.worldTime * 1000;
+                return (game.time.timestamp ?? game.time.worldTime * 1000);
             }
             return originalNow();
         };
@@ -149,7 +350,7 @@ Hooks.once('ready', async () => {
             }
             try {
                 const api = CALENDARIA.api;
-                const worldTimeMs = game.time.worldTime * 1000;
+                const worldTimeMs = (game.time.timestamp ?? game.time.worldTime * 1000);
                 let dt;
                 if (typeof timestamp !== 'number' || Math.abs(timestamp - worldTimeMs) < 1000) {
                     dt = api.getCurrentDateTime();
@@ -157,15 +358,16 @@ Hooks.once('ready', async () => {
                     dt = api.timestampToDate(timestamp / 1000);
                 }
                 if (dt) {
+                    const day = dt.day ?? dt.dayOfMonth ?? 1;
                     let weekday = dt.weekday;
                     if (weekday == null) {
-                        try { weekday = api.dayOfWeek({ year: dt.year, month: dt.month, day: dt.day }); }
+                        try { weekday = api.dayOfWeek({ year: dt.year, month: dt.month, day }); }
                         catch { weekday = 0; }
                     }
                     return {
                         year:    dt.year,
                         month:   dt.month,
-                        day:     dt.day,
+                        day:     day,
                         hour:    dt.hour   ?? 0,
                         minute:  dt.minute ?? 0,
                         second:  dt.second ?? 0,
@@ -184,22 +386,23 @@ Hooks.once('ready', async () => {
             if (typeof CALENDARIA !== 'undefined' && CALENDARIA?.api) {
                 try {
                     const cal = CALENDARIA.api.getActiveCalendar();
-                    const monthsRaw = cal.months?.values ?? {};
-                    const daysRaw = cal.days?.values ?? {};
-                    const months = Object.values(monthsRaw)
-                        .sort((a, b) => a.ordinal - b.ordinal)
-                        .map(m => ({
-                            name: m.name,
-                            abbreviation: m.abbreviation,
-                            days: m.days,
-                            leapDays: m.leapDays ?? null
-                        }));
-                    const weekdays = Object.values(daysRaw)
-                        .sort((a, b) => a.ordinal - b.ordinal)
-                        .map(d => ({
-                            name: d.name,
-                            abbreviation: d.abbreviation
-                        }));
+                    // New API: monthsArray/weekdaysArray. Old API: months.values/days.values.
+                    const monthsSrc = (Array.isArray(cal?.monthsArray) && cal.monthsArray.length > 0)
+                        ? cal.monthsArray
+                        : Object.values(cal?.months?.values ?? {}).sort((a, b) => a.ordinal - b.ordinal);
+                    const weekdaysSrc = (Array.isArray(cal?.weekdaysArray) && cal.weekdaysArray.length > 0)
+                        ? cal.weekdaysArray
+                        : Object.values(cal?.days?.values ?? {}).sort((a, b) => a.ordinal - b.ordinal);
+                    const months = monthsSrc.map(m => ({
+                        name: m.name,
+                        abbreviation: m.abbreviation,
+                        days: m.days,
+                        leapDays: m.leapDays ?? null
+                    }));
+                    const weekdays = weekdaysSrc.map(d => ({
+                        name: d.name,
+                        abbreviation: d.abbreviation
+                    }));
                     return { months, weekdays };
                 } catch (e) {
                     console.error(`${MODULE_ID} | getCalendarConfig patch error:`, e);
@@ -221,7 +424,165 @@ Hooks.once('ready', async () => {
          * Synchronously refresh the phone clock and calendar app.
          * Wrapped to be safe for hook registration (no unhandled promise rejections).
          */
+        /**
+         * Sync Calendaria's calendar structure → phone's smartphone-time-config.
+         * Writes: months array, weekdays, leap year rule.
+         * Called once on startup and on calendaria.READY — structure doesn't
+         * change during a session.
+         */
+        function syncCalendarStructure() {
+            if (!game.user.isGM) return;
+            try {
+                const calApi = (typeof CALENDARIA !== 'undefined') ? CALENDARIA?.api : null;
+                if (!calApi) return;
+                const cal = calApi.getActiveCalendar?.();
+                if (!cal) return;
+
+                const cfg = game.settings.get('smartphone-widget', 'smartphone-time-config');
+                if (!cfg) return;
+
+                let changed = false;
+
+                // Months
+                const monthsSrc = (Array.isArray(cal.monthsArray) && cal.monthsArray.length > 0)
+                    ? cal.monthsArray
+                    : Object.values(cal.months?.values ?? {}).sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0));
+                if (monthsSrc.length > 0) {
+                    cfg.months = monthsSrc.map(m => ({
+                        name: m.name,
+                        days: m.days ?? 30,
+                        isLeap: m.leapDays != null && m.leapDays !== m.days,
+                        leapOffset: m.leapDays != null ? (m.leapDays - (m.days ?? 30)) : 0
+                    }));
+                    changed = true;
+                }
+
+                // Weekdays
+                const weekdaysSrc = (Array.isArray(cal.weekdaysArray) && cal.weekdaysArray.length > 0)
+                    ? cal.weekdaysArray
+                    : Object.values(cal.days?.values ?? {}).sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0));
+                if (weekdaysSrc.length > 0) {
+                    cfg.weekdays = weekdaysSrc.map(d => d.name);
+                    changed = true;
+                }
+
+                // Leap year rule
+                const lyc = cal.leapYearConfig;
+                if (lyc) {
+                    if (lyc.type === 'gregorian') {
+                        cfg.leapYearRule = { frequency: 4, exception: 100, proleptic: 400 };
+                    } else if (lyc.interval) {
+                        cfg.leapYearRule = { frequency: lyc.interval, exception: 0, proleptic: 0 };
+                    }
+                    changed = true;
+                }
+
+                if (changed) game.settings.set('smartphone-widget', 'smartphone-time-config', cfg);
+            } catch (e) { console.warn(`${MODULE_ID} | syncCalendarStructure:`, e); }
+        }
+
+        /**
+         * Compute the timestamp that the phone's internal getDateObject algorithm
+         * would resolve to the given date components. The phone starts from year 0
+         * and counts days forward, so we must reverse that calculation.
+         *
+         * Uses the phone's own config (months, leap year rule) to ensure the
+         * result matches exactly what getDateObject would produce.
+         *
+         * @param {{year:number, month:number, day:number, hour:number, minute:number, second:number}} dt
+         * @param {object} cfg - smartphone-time-config
+         * @returns {number} timestamp in milliseconds
+         */
+        function dateToPhoneTimestamp(dt, cfg) {
+            const MS_IN_SECOND = 1000;
+            const MS_IN_MINUTE = MS_IN_SECOND * (cfg.secondsInMinute || 60);
+            const MS_IN_HOUR = MS_IN_MINUTE * (cfg.minutesInHour || 60);
+            const MS_IN_DAY = MS_IN_HOUR * (cfg.hoursInDay || 24);
+
+            const months = cfg.months || [];
+            const lr = cfg.leapYearRule || {};
+
+            function isLeapYear(y) {
+                if (!lr.frequency) return false;
+                if (y % lr.frequency !== 0) return false;
+                if (lr.exception && y % lr.exception === 0) {
+                    return !!(lr.proleptic && y % lr.proleptic === 0);
+                }
+                return true;
+            }
+
+            function daysInYear(y) {
+                let total = 0;
+                for (const mo of months) {
+                    total += (mo.days || 30);
+                    if (mo.isLeap && isLeapYear(y)) total += (mo.leapOffset || 0);
+                }
+                return total || 365;
+            }
+
+            function daysInMonth(y, m) {
+                const mo = months[m - 1];
+                if (!mo) return 30;
+                let d = mo.days || 30;
+                if (mo.isLeap && isLeapYear(y)) d += (mo.leapOffset || 0);
+                return d;
+            }
+
+            // Sum days for all years before target year
+            let totalDays = 0;
+            for (let y = 0; y < dt.year; y++) totalDays += daysInYear(y);
+
+            // Sum days for months before target month (1-based)
+            const month = dt.month ?? 1;
+            for (let m = 1; m < month; m++) totalDays += daysInMonth(dt.year, m);
+
+            // Add remaining days (1-based → 0-based)
+            totalDays += ((dt.day ?? dt.dayOfMonth ?? 1) - 1);
+
+            return totalDays * MS_IN_DAY
+                + (dt.hour ?? 0) * MS_IN_HOUR
+                + (dt.minute ?? 0) * MS_IN_MINUTE
+                + (dt.second ?? 0) * MS_IN_SECOND;
+        }
+
+        /**
+         * Sync Calendaria's current date/time → phone's smartphone-world-time.
+         * Computes the correct timestamp that the phone's internal algorithm
+         * will resolve to Calendaria's current date.
+         */
+        function syncPhoneDateTime() {
+            if (!game.user.isGM) return;
+            try {
+                const calApi = (typeof CALENDARIA !== 'undefined') ? CALENDARIA?.api : null;
+                if (!calApi) return;
+                const dt = calApi.getCurrentDateTime();
+                if (!dt) return;
+
+                const cfg = game.settings.get('smartphone-widget', 'smartphone-time-config');
+                if (!cfg) return;
+
+                // Also keep the config date fields in sync (for any UI that reads them)
+                const day = dt.day ?? dt.dayOfMonth ?? 1;
+                cfg.year = dt.year;
+                cfg.month = dt.month;
+                cfg.day = day;
+                cfg.hour = dt.hour ?? 0;
+                cfg.minute = dt.minute ?? 0;
+                cfg.second = dt.second ?? 0;
+                game.settings.set('smartphone-widget', 'smartphone-time-config', cfg);
+
+                // Compute the timestamp the phone's algorithm expects
+                const ts = dateToPhoneTimestamp(dt, cfg);
+                game.settings.set('smartphone-widget', 'smartphone-world-time', ts);
+            } catch (e) { console.warn(`${MODULE_ID} | syncPhoneDateTime:`, e); }
+        }
+
+        /**
+         * Refresh the phone's clock display and sync date.
+         */
         function refreshPhoneTime() {
+            syncPhoneDateTime();
+
             getWidgetInstance().then(inst => {
                 if (!inst) return;
                 // Update status bar clock
@@ -236,6 +597,10 @@ Hooks.once('ready', async () => {
         Hooks.on(cApi.hooks.DATE_TIME_CHANGE, refreshPhoneTime);
         Hooks.on('updateWorldTime', refreshPhoneTime);
 
+        // Immediate sync — write full calendar structure + date now
+        syncCalendarStructure();
+        syncPhoneDateTime();
+
         // Also fire the SmartphoneTime hook for any other listeners
         const stMod = await import('/modules/smartphone-widget/scripts/core/SmartphoneTime.js');
         const hookName = stMod.SmartphoneTime.HOOK_NAME;
@@ -246,6 +611,7 @@ Hooks.once('ready', async () => {
 
         // When Calendaria finishes initializing, force-refresh everything
         Hooks.on(cApi.hooks.READY, () => {
+            syncCalendarStructure();
             refreshPhoneTime();
             getWidgetInstance().then(inst => {
                 if (!inst) return;
@@ -385,7 +751,7 @@ Hooks.once('ready', async () => {
          * Map Calendaria weather → phone weather-data format.
          * Only the GM writes settings; all clients read.
          */
-        function _syncWeatherImpl() {
+        async function _syncWeatherImpl({ force = false } = {}) {
             if (!game.user.isGM) return;
             try {
                 const cw = cApi.getCurrentWeather();
@@ -450,10 +816,10 @@ Hooks.once('ready', async () => {
                 };
 
                 const hash = JSON.stringify(weatherData);
-                if (hash === _lastWeatherHash) return; // No change
+                if (!force && hash === _lastWeatherHash) return; // No change
                 _lastWeatherHash = hash;
 
-                game.settings.set('smartphone-widget', 'weather-data', weatherData);
+                await game.settings.set('smartphone-widget', 'weather-data', weatherData);
             } catch (e) {
                 console.error(`${MODULE_ID} | Weather sync error:`, e);
             }
@@ -464,6 +830,7 @@ Hooks.once('ready', async () => {
 
         // Sync on startup (immediate, not debounced)
         _syncWeatherImpl();
+        _syncWeatherNow = _syncWeatherImpl;
 
         // Sync on relevant Calendaria events
         Hooks.on(cApi.hooks.WEATHER_CHANGE, syncWeather);
@@ -593,6 +960,62 @@ Hooks.once('ready', async () => {
             function cToF(c) { return c * 9 / 5 + 32; }
             function fToC(f) { return (f - 32) * 5 / 9; }
 
+            /**
+             * Open a weather preset selection dialog, then call setWeather.
+             */
+            async function openWeatherPicker() {
+                if (typeof CALENDARIA === 'undefined' || !CALENDARIA?.api) {
+                    ui.notifications.warn('Calendaria not available.');
+                    return;
+                }
+                const calApi = CALENDARIA.api;
+
+                let presets;
+                try { presets = await calApi.getWeatherPresets(); } catch { presets = null; }
+                if (!presets) return;
+                if (!Array.isArray(presets)) {
+                    try { presets = Object.values(presets); } catch { return; }
+                }
+                if (!presets.length) { ui.notifications.warn('No weather presets.'); return; }
+
+                const btns = presets.map(p => {
+                    const icon = p.icon ? (/^fa[srlbd] /.test(p.icon) ? p.icon : `fas ${p.icon}`) : 'fas fa-cloud';
+                    const label = game.i18n.localize(p.label) || p.label || p.id || '?';
+                    const color = p.color || '#868e96';
+                    return `<button class="smcal-wp-btn" data-id="${p.id}"
+                        style="border-left:4px solid ${color};text-align:left;padding:6px 10px;margin:2px 0;width:100%;cursor:pointer;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.05);border-radius:4px;">
+                        <i class="${icon}" style="color:${color};width:20px;text-align:center;"></i>
+                        <span>${label}</span></button>`;
+                }).join('');
+
+                const dlg = new Dialog({
+                    title: game.i18n.localize('SMCAL.selectWeather') || 'Select Weather',
+                    content: `<div style="max-height:400px;overflow-y:auto;padding:4px;">${btns}</div>`,
+                    buttons: { cancel: { icon: '<i class="fas fa-times"></i>', label: game.i18n.localize('SMCAL.cancel') || 'Cancel' } },
+                    default: 'cancel',
+                    render: (html) => {
+                        html[0].querySelectorAll('.smcal-wp-btn').forEach(btn => {
+                            btn.addEventListener('click', async () => {
+                                try {
+                                    await calApi.setWeather(btn.dataset.id);
+                                    // Force immediate weather sync (bypass debounce + hash check)
+                                    if (_syncWeatherNow) await _syncWeatherNow({ force: true });
+                                    ui.notifications.info(`Weather: ${btn.querySelector('span')?.textContent}`);
+                                    // Re-render weather app after setting is saved
+                                    try {
+                                        const inst = await getWidgetInstance();
+                                        const wa = inst?.apps?.get('weather');
+                                        if (wa) wa.render();
+                                    } catch {};
+                                } catch (err) { console.error(`${MODULE_ID} | setWeather:`, err); }
+                                dlg.close();
+                            });
+                        });
+                    }
+                }, { width: 300 });
+                dlg.render(true);
+            }
+
             WA.prototype.render = async function () {
                 // Call original render first to populate this.data and all DOM
                 await originalRender.call(this);
@@ -626,11 +1049,176 @@ Hooks.once('ready', async () => {
 
                     feelsEl.textContent = `${feelsDisplay}°`;
                 }
+
+                // --- Replace "Reroll" with "Select Weather" for Calendaria source ---
+                const canChangeWeather = (() => {
+                    try { const r = CALENDARIA?.permissions?.hasPermission?.('changeWeather'); return r != null ? !!r : game.user.isGM; }
+                    catch { return game.user.isGM; }
+                })();
+                if (canChangeWeather && this.data?.source === 'calendaria') {
+                    const rerollBtn = this.element.querySelector('[data-action="reroll"]');
+                    if (rerollBtn) {
+                        const newBtn = rerollBtn.cloneNode(false);
+                        newBtn.innerHTML = `<i class="fas fa-cloud-sun-rain"></i> ${game.i18n.localize('SMCAL.selectWeather') || 'Select Weather'}`;
+                        newBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openWeatherPicker(); });
+                        rerollBtn.parentNode.replaceChild(newBtn, rerollBtn);
+                    }
+
+                    // Hide native Weather Settings (not applicable for Calendaria)
+                    const settingsBtn = this.element.querySelector('[data-action="settings"]');
+                    if (settingsBtn) settingsBtn.style.display = 'none';
+                }
             };
 
-            console.log(`${MODULE_ID} | WeatherApp patched (wind mph + feels-like).`);
+            console.log(`${MODULE_ID} | WeatherApp patched (wind mph + feels-like + select weather).`);
         }
     } catch (err) {
         console.error(`${MODULE_ID} | Failed to patch WeatherApp:`, err);
     }
+
+    // ==================================================================
+    //  7. PATCH SettingsApp — inject Calendar Theme into App Themes menu
+    // ==================================================================
+    try {
+        const settingsMod = await import('/modules/smartphone-widget/scripts/apps/SettingsApp.js');
+        const SA = settingsMod.SettingsApp;
+
+        // --- Patch showAppThemesMenu to add our entry + listener ---
+        // We inject after origShowAppThemes (which calls updateContent → setupListeners),
+        // so we must attach the click listener directly here rather than relying on
+        // setupAppThemesMenuListeners (which has already run before our element exists).
+        const origShowAppThemes = SA.prototype.showAppThemesMenu;
+        SA.prototype.showAppThemesMenu = function () {
+            origShowAppThemes.call(this);
+            if (!this.element) return;
+            const list = this.element.querySelector('.settings-content.settings-list');
+            if (!list) return;
+            if (list.querySelector('[data-action="calendar-theme-select"]')) return;
+            const item = document.createElement('div');
+            item.className = 'settings-item';
+            item.dataset.action = 'calendar-theme-select';
+            item.innerHTML = `<i class="fas fa-calendar-alt"></i><span>${game.i18n.localize('SMCAL.theme')}</span>`;
+            list.appendChild(item);
+            item.addEventListener('click', () => this._showCalendarThemeSettings());
+        };
+
+        // --- Add calendar theme sub-view ---
+        SA.prototype._showCalendarThemeSettings = function () {
+            this.activeSubView = 'calendar-theme';
+            let currentTheme;
+            try { currentTheme = game.settings.get(MODULE_ID, 'calendarTheme') || 'default'; } catch { currentTheme = 'default'; }
+            const themes = [
+                { id: 'default',          label: game.i18n.localize('SMCAL.themeDefault') },
+                { id: 'golden-squares',   label: game.i18n.localize('SMCAL.themeGoldenSquares') }
+            ];
+            const items = themes.map(t => `
+                <div class="theme-select-item" data-theme="${t.id}">
+                    <span>${t.label}</span>
+                    ${currentTheme === t.id ? '<i class="fas fa-check"></i>' : ''}
+                </div>`).join('');
+            const content = `
+                <div class="settings-sub-view">
+                    <div class="app-header">
+                        <div class="header-left"><button class="back-btn" data-action="back-to-app-themes"><i class="fas fa-arrow-left"></i></button></div>
+                        <div class="header-title">${game.i18n.localize('SMCAL.theme')}</div>
+                    </div>
+                    <div class="settings-content">
+                        <div class="theme-selection-list">${items}</div>
+                    </div>
+                </div>`;
+            this.updateContent(content);
+        };
+
+        // --- Patch setupListeners to handle our sub-view ---
+        const origSetupListeners = SA.prototype.setupListeners;
+        SA.prototype.setupListeners = function () {
+            origSetupListeners.call(this);
+            if (this.activeSubView === 'calendar-theme') {
+                this._setupCalendarThemeListeners();
+            }
+        };
+
+        SA.prototype._setupCalendarThemeListeners = function () {
+            const backBtn = this.element?.querySelector('.back-btn[data-action="back-to-app-themes"]');
+            if (backBtn) backBtn.addEventListener('click', () => this.showAppThemesMenu());
+            this.element?.querySelectorAll('.theme-select-item').forEach(item => {
+                item.addEventListener('click', async () => {
+                    const selected = item.dataset.theme;
+                    await game.settings.set(MODULE_ID, 'calendarTheme', selected);
+                    this._showCalendarThemeSettings();
+                    this.widget?.showToastNotification?.(game.i18n.localize('SMARTPHONE.notifications.themeChanged'));
+                });
+            });
+        };
+
+        // --- Padlock: GM can lock "Always Show Home Button" for all players ---
+        // Adds a small padlock icon next to the existing toggle. Clicking it
+        // toggles the world-scoped `forcePlayerHomeButton` setting. When locked,
+        // non-GM players see the toggle as checked + disabled.
+        const origShowGeneral = SA.prototype.showGeneralSettings;
+        SA.prototype.showGeneralSettings = async function () {
+            await origShowGeneral.call(this);
+            if (!this.element) return;
+            const homeToggle = this.element.querySelector('#show-persistent-home-toggle');
+            if (!homeToggle) return;
+            const toggleRow = homeToggle.closest('.settings-item-toggle');
+            if (!toggleRow) return;
+
+            let forceOn = false;
+            try { forceOn = !!game.settings.get(MODULE_ID, 'forcePlayerHomeButton'); } catch {}
+
+            if (game.user.isGM) {
+                if (toggleRow.querySelector('.smcal-padlock')) return;
+                const padlock = document.createElement('button');
+                padlock.className = 'smcal-padlock';
+                padlock.title = forceOn ? 'Unlock for players' : 'Lock for all players';
+                padlock.innerHTML = `<i class="fas ${forceOn ? 'fa-lock' : 'fa-lock-open'}"></i>`;
+                padlock.style.cssText = 'all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;width:24px;height:24px;font-size:0.8em;border-radius:4px;flex-shrink:0;margin-left:4px;color:' + (forceOn ? '#b5770a' : '#888') + ';';
+                padlock.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    let current = false;
+                    try { current = !!game.settings.get(MODULE_ID, 'forcePlayerHomeButton'); } catch {}
+                    const next = !current;
+                    try { await game.settings.set(MODULE_ID, 'forcePlayerHomeButton', next); }
+                    catch (err) { console.warn(`${MODULE_ID} | set forcePlayerHomeButton:`, err); return; }
+                    const icon = padlock.querySelector('i');
+                    if (icon) icon.className = `fas ${next ? 'fa-lock' : 'fa-lock-open'}`;
+                    padlock.title = next ? 'Unlock for players' : 'Lock for all players';
+                    padlock.style.color = next ? '#b5770a' : '#888';
+                });
+                toggleRow.appendChild(padlock);
+            } else if (forceOn) {
+                homeToggle.checked = true;
+                homeToggle.disabled = true;
+                const switchLabel = homeToggle.closest('label.switch');
+                if (switchLabel) switchLabel.style.opacity = '0.5';
+            }
+        };
+
+
+        console.log(`${MODULE_ID} | SettingsApp patched (calendar theme in App Themes menu).`);
+    } catch (err) {
+        console.error(`${MODULE_ID} | Failed to patch SettingsApp:`, err);
+    }
+
+    // ==================================================================
+    //  8. PATCH WidgetManager — reapply player home-button override on render
+    // ==================================================================
+    try {
+        const wmMod = await import('/modules/smartphone-widget/scripts/core/WidgetManager.js');
+        const WM = wmMod.WidgetManager;
+        const origOnRender = WM.prototype._onRender;
+        WM.prototype._onRender = function (context, options) {
+            const ret = origOnRender.call(this, context, options);
+            try { _applyPlayerHomeButton(); } catch {}
+            return ret;
+        };
+        // Also apply once at ready (in case the widget already rendered before us).
+        _applyPlayerHomeButton();
+        console.log(`${MODULE_ID} | WidgetManager patched (player home button override).`);
+    } catch (err) {
+        console.error(`${MODULE_ID} | Failed to patch WidgetManager:`, err);
+    }
 });
+

@@ -1,8 +1,6 @@
 # Smartphone Calendar Plus
 
-A feature-rich calendar replacement for the [Smartphone Widget Calendar](https://foundryvtt.com/packages/smartphone-widget) module for FoundryVTT. 
-
-Optionally integrates with [Calendaria](https://github.com/Sayshal/Calendaria) for fantasy calendar support, syncing time, date, weather, and notes between systems.
+A feature-rich calendar replacement for the [Smartphone Widget](https://foundryvtt.com/packages/smartphone-widget) module in Foundry VTT. Optionally integrates with [Calendaria](https://github.com/Sayshal/Calendaria) for fantasy calendar support, syncing time, date, weather, and notes between systems.
 
 Works as a standalone Gregorian calendar without Calendaria installed.
 
@@ -14,24 +12,16 @@ Works as a standalone Gregorian calendar without Calendaria installed.
 
 ## Installation
 
-1. Download or clone this repository into your Foundry `https://github.com/evernessince/smartphone-calendar-plus` directory.
+1. Download or clone this repository into your Foundry `Data/modules/` directory.
 2. The folder name **must** be `calendaria-phone-app`.
 3. Enable the module in your world's Module Management screen.
-
-## Overview
-
-- Time, date, and Calendar now syncs with Calendaria (including custom months, weekdays, and day lengths) **Note:  Due to horizontal space limiations, having a custom calendaria calendar with more than 9 weekdays will require the use of a horizontal scrollbar in order to keep it functional
-**Note 2:  If the GM updates the number of days in a week or number of months in a year, connector players will have to reload in order to see those changes.  This is due to Calendaria not propagating these changes when the GM makes them.
-- Syncs weather data from Calendaria to the weather app and converts secondary weather data (humidity, wind speed, feels like temp) from Calendaria to the Weather App.  Uses real weather modeling to best predicit values not explicitly provided by Calendaria.
-- Calendaria notes now display in the calendar app.
-- Overhauls the UI, UX, and adds pinning, an all notes screen, settings menu and more.
 
 ## Features
 
 ### Calendar
 
 - Monthly grid view pulled from your active calendar system (Gregorian or any Calendaria-supported calendar)
-- Colored dot indicators: blue for regular events, purple for recurring occurrences, both when a day has both types
+- Day cells show colored dot indicators: blue for regular events, purple for recurring occurrences, both when a day has both types
 - Click any day to see its events in the detail panel below the grid
 - Navigate months with arrow buttons or the scroll wheel on the month/year fields
 - Click the month name to pick from a dropdown; click the year to type a new one
@@ -112,6 +102,12 @@ Automatically syncs Calendaria's weather to the Smartphone Widget's weather app:
 
 The phone's status bar clock stays in sync with Calendaria's world time through patched SmartphoneTime methods. Calendar structure (months, weekdays, leap years) is also synced so the phone understands your custom calendar.
 
+### Per-Phone Storage
+
+- Phone-native events are stored per phone, not per player
+- Pinned notes are stored per phone and shared across all clients (world-scoped)
+- Event writes route through the original module's socket handlers for cross-client sync
+
 ## Changelog
 
 ### v0.2.0
@@ -129,7 +125,7 @@ The phone's status bar clock stays in sync with Calendaria's world time through 
 - Calendar hooks (noteCreated, noteDeleted, etc.) are registered once and cleaned up on destroy instead of every render, eliminating console spam
 - Font declarations updated from woff2 to TTF format
 
-#### Fixes
+#### Bug Fixes
 - Fixed text color defaulting to the Foundry theme's light color instead of black across both Chrome and Firefox
 - Fixed Firefox form elements (inputs, selects, buttons, labels) not inheriting black text due to CSS specificity issues with Foundry themes
 - Fixed Firefox heading (h3/h4) color being overridden by theme styles
@@ -208,11 +204,9 @@ Result clamped to 5-99%.
 | Hot + humid (≥80°F, humidity ≥40%) | Rothfusz Heat Index with NWS adjustments |
 | Mild range (50-80°F) | Wind cooling with linear taper + humidity warming |
 
-### Cross-Browser Compatability
+### Cross-Browser CSS
 
 The module targets both Chrome and Firefox with a unified base `font-weight: 500`. All calendar text defaults to black via `.calendar-app.smcal-app` at specificity (0,2,0), with `:where()` for form element inheritance so intentional color overrides (save button white, delete button red) still win. Checkbox accents override the theme's `--color-accent` / `--check-color` variables with the calendar's blue accent.
-
-Firefox enhanced tracing protection blocks external font requests so this module integrates them to ensure consistent styling across browsers.
 
 ### Security
 

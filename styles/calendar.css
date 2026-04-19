@@ -1,0 +1,1221 @@
+/* ================================================================
+   Self-hosted fonts
+   Exo 2:        Used by smartphone-widget (--arc-font) but never loaded.
+   Roboto Slab:  Used by our Golden Squares theme headings.
+   Hosting locally avoids Firefox Enhanced Tracking Protection blocking
+   Google Fonts and ensures the phone text always renders correctly.
+   ================================================================ */
+@font-face {
+    font-family: 'Exo 2';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/Exo2-Regular.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Exo 2';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('../fonts/Exo2-Medium.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Exo 2';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('../fonts/Exo2-SemiBold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Exo 2';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/Exo2-Bold.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Roboto Slab';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/RobotoSlab-Regular.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Roboto Slab';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/RobotoSlab-Bold.ttf') format('truetype');
+}
+
+/* ================================================================
+   CalendariaPhoneApp — Additive styles
+   The smartphone widget provides base styles for .calendar-app,
+   .calendar-grid, .day, .weekday, .calendar-header, etc.
+   We only ADD what is needed for our custom features.
+   ================================================================ */
+
+/* ---- Font consistency ---- */
+/* Override Foundry theme heading fonts so all calendar text uses the same
+   sans-serif family as the month/year header. */
+.smartphone-frame .calendar-app h3,
+.smartphone-frame .calendar-app h4 {
+    font-family: inherit;
+    color: inherit;
+}
+
+/* ---- Header overlays (pin badge left, today button right) ---- */
+.smcal-app > .app-header {
+    position: relative;
+}
+
+/* Default all text to black. The smartphone-screen inherits --arc-text-light
+   (#e0e0e0); we override that here. .calendar-app.smcal-app gives (0,2,0)
+   specificity to beat Foundry theme rules. :where() keeps form-element
+   inheritance at the same (0,2,0) so our own intentional overrides (save-btn
+   white, delete-btn red, hint grey, etc.) still win by order or specificity. */
+.calendar-app.smcal-app {
+    color: black;
+    font-weight: 500;
+    --smcal-accent: #4a9eff;
+    color-scheme: light;
+    text-rendering: optimizeLegibility;
+    font-synthesis: none;
+}
+.calendar-app.smcal-app :where(input, textarea, select, button, label, code, summary) {
+    color: inherit;
+}
+.calendar-app.smcal-app :where(input, textarea, select, button) {
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+}
+
+/* Checkbox accent — override theme's --color-accent / --check-color */
+.calendar-app.smcal-app input[type="checkbox"] {
+    border-color: #b0b0b0;
+}
+.calendar-app.smcal-app input[type="checkbox"]:checked {
+    --check-color: var(--smcal-accent, #4a9eff);
+    border-color: var(--smcal-accent, #4a9eff);
+}
+.calendar-app.smcal-app input[type="checkbox"]:checked::before {
+    background-color: var(--smcal-accent, #4a9eff);
+}
+.calendar-app.smcal-app input[type="checkbox"]:checked::after {
+    color: var(--smcal-accent, #4a9eff);
+    background-color: var(--smcal-accent, #4a9eff);
+}
+
+
+.smcal-hdr-left,
+.smcal-hdr-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+}
+.smcal-hdr-left { left: 4px; }
+.smcal-hdr-right { right: 4px; }
+
+/* ---- Shared button reset for this module ----
+   Foundry themes override the bare `button` element via CSS variables
+   (--button-background-color, --button-border-color, --button-text-color, etc.).
+   We must fully reset every button we control so themes cannot leak in.
+   The prefix .smartphone-frame .calendar-app provides enough specificity to
+   beat both Foundry core (bare `button`) and CalendarApp.css selectors. */
+
+/* Header buttons — pin badge & today */
+.smartphone-frame .calendar-app .today-btn.smcal-today-btn,
+.smartphone-frame .calendar-app .smcal-pin-badge {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    padding: 2px;
+    line-height: 1;
+    min-width: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: transparent;
+    color: #007aff;
+    box-sizing: border-box;
+    transition: background 0.15s, color 0.15s;
+}
+.smartphone-frame .calendar-app .today-btn.smcal-today-btn:hover,
+.smartphone-frame .calendar-app .smcal-pin-badge:hover {
+    background: #e9e9e9;
+    color: #0056b3;
+}
+
+/* Month navigation arrows */
+.smartphone-frame .calendar-app .calendar-header .nav-btn {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: transparent;
+    color: #007aff;
+    box-sizing: border-box;
+    transition: background 0.15s, color 0.15s;
+}
+.smartphone-frame .calendar-app .calendar-header .nav-btn:hover {
+    background: #e9e9e9;
+    color: #0056b3;
+}
+
+/* Calendar header — arrows fixed at the sides, date shrinks / truncates to fit */
+.smartphone-frame .calendar-app .calendar-header {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+}
+.smartphone-frame .calendar-app .calendar-header .nav-btn { flex-shrink: 0; }
+
+/* Date header — bumped specificity (html ... attribute selectors + !important on
+   critical sizing bits) so game-system themes that aggressively style `.input`,
+   `select`, and `span` with their own font-size/background/padding don't distort
+   the inline editor. */
+html body .smartphone-frame .calendar-app .calendar-header .current-month {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    gap: 0 !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+}
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-year-edit,
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-month-edit {
+    all: unset;
+    cursor: pointer !important;
+    font: inherit !important;
+    color: inherit !important;
+    /* Horizontal padding is 0 so a trailing comma / space in the format string
+       sits flush against the field. The hover background still produces the
+       button-like pill thanks to the border-radius. Vertical padding keeps a
+       small click target height. */
+    padding: 1px 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 4px !important;
+    text-align: center !important;
+    box-sizing: content-box !important;
+    background: transparent !important;
+    line-height: inherit !important;
+    height: auto !important;
+    min-height: 0 !important;
+    box-shadow: none !important;
+    min-width: 1.5ch !important;
+}
+/* Non-interactive static fields — tighter so they sit close to surrounding
+   punctuation, matching the new interactive-field spacing. */
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-day-num,
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-dow { padding: 0 !important; }
+/* Separator text (commas, spaces) between tokens — must survive the inline-flex
+   container which collapses anonymous whitespace-only text nodes. white-space:pre
+   ensures spaces render; flex-shrink:0 prevents zero-width compression. */
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-sep {
+    white-space: pre !important;
+    flex-shrink: 0 !important;
+    padding: 0 !important;
+}
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-year-edit:hover,
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-year-edit:focus,
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-month-edit:hover,
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-month-edit:focus {
+    background: rgba(0,0,0,0.08) !important;
+    outline: none !important;
+}
+/* Hide number spin buttons */
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-year-edit::-webkit-inner-spin-button,
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-year-edit::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+html body .smartphone-frame .calendar-app .calendar-header .current-month .smcal-year-edit {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+}
+
+/* ---- Scrollable main area ---- */
+.smcal-main {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ---- Grid: dot indicator + scroll constraint ---- */
+.smcal-grid {
+    max-height: 50%;
+    overflow-y: auto;
+}
+
+.smcal-grid .day { position: relative; }
+
+/* Dots wrapper — flex container centers 1 or 2 dots as a group */
+.smcal-dots {
+    position: absolute;
+    bottom: 1px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2px;
+    pointer-events: none;
+}
+.smcal-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--smcal-accent, #3b82f6);
+}
+.smcal-dot.smcal-dot-recurring { background: #6b46c1; }
+
+/* ---- Day info header + toolbar ---- */
+.smcal-day-hdr {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.smcal-day-hdr h4 {
+    margin: 0;
+    flex: 1;
+    font-size: 0.95em;
+}
+
+/* Toolbar buttons — shared reset (applies to day header + pinned-view search row) */
+.smartphone-frame .calendar-app .smcal-day-hdr .smcal-tb,
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-search-row .smcal-tb {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    box-sizing: border-box;
+    font-size: 0.8em;
+    border-radius: 4px;
+    background: none;
+    color: black;
+    flex-shrink: 0;
+}
+.smartphone-frame .calendar-app .smcal-day-hdr .smcal-tb:hover,
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-search-row .smcal-tb:hover {
+    background: rgba(0,0,0,0.12);
+}
+
+/* Sort buttons need extra width for 2 icons */
+.smartphone-frame .calendar-app .smcal-day-hdr .sort-time-btn,
+.smartphone-frame .calendar-app .smcal-day-hdr .sort-cat-btn {
+    width: 38px;
+}
+
+/* Active sort/compact toggles get a subtle outline */
+.smartphone-frame .calendar-app .smcal-day-hdr .sort-time-btn:not(.smcal-faded),
+.smartphone-frame .calendar-app .smcal-day-hdr .sort-cat-btn:not(.smcal-faded) {
+    border: 1px solid rgba(0,0,0,0.25);
+}
+
+/* Faded (inactive) toolbar buttons */
+.smartphone-frame .calendar-app .smcal-day-hdr .smcal-tb.smcal-faded { opacity: 0.35; }
+
+/* Add-event button — override smartphone-widget's blue pill style to match siblings */
+.smartphone-frame .calendar-app .add-event-btn.smcal-tb {
+    background: none;
+    color: black;
+    width: 25px;
+    border-radius: 4px;
+}
+
+/* Delete-all button */
+.smartphone-frame .calendar-app .delete-all-btn.smcal-tb {
+    border: none;
+}
+
+/* White container around notes */
+.smcal-note-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 4px;
+    margin-left: -4px;
+    margin-right: -4px;
+}
+
+/* ---- Note / Event items ---- */
+.smcal-note {
+    padding: 6px 4px 6px 7px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    border-left: 3px solid var(--smcal-note-color, #4a9eff);
+    border-radius: 6px;
+    border-bottom: 2px solid #0000002b;
+}
+
+.smcal-note.smcal-compact {
+    padding: 4px 4px 4px 7px;
+    margin-bottom: 3px;
+}
+
+.smcal-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.smcal-time { font-size: 0.82em; white-space: nowrap; }
+.smcal-time.smcal-allday-label { font-size: 0.7em; }
+.smcal-cat-icon { font-size: 0.82em; color: black; }
+
+
+.smcal-title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9em;
+}
+
+.smcal-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+/* Hover-only action buttons: hidden unless the note is hovered or focus is within it */
+.smcal-note.smcal-actions-hover .smcal-actions {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+.smcal-note.smcal-actions-hover:hover .smcal-actions,
+.smcal-note.smcal-actions-hover:focus-within .smcal-actions {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Note action buttons — reset all inherited styles */
+.smartphone-frame .calendar-app .smcal-note button.smcal-act {
+    all: unset;
+    cursor: pointer;
+    padding: 3px 5px;
+    font-size: 0.82em;
+    border-radius: 4px;
+    color: inherit;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+.smartphone-frame .calendar-app .smcal-note button.smcal-act:hover { background: rgba(0,0,0,0.06); }
+
+/* Pinned icon: red */
+.smartphone-frame .calendar-app .smcal-note button.smcal-act.smcal-pin-on {
+    color: #b90000 !important;
+    opacity: 1;
+}
+
+/* Past events dim, hover restores */
+.smcal-note.smcal-past { opacity: 0.4; }
+.smcal-note.smcal-past:hover { opacity: 1; }
+
+/* Subtle hover on all notes */
+.smcal-note:hover { background: rgba(0,0,0,0.03); }
+
+/* Normal mode: slightly larger action buttons */
+.smcal-note:not(.smcal-compact) button.smcal-act {
+    padding: 4px 6px;
+    font-size: 0.85em;
+}
+
+/* ---- Expand panel ---- */
+.smcal-expand {
+    display: none;
+    width: 100%;
+    padding: 3px 0 2px 2px;
+    font-size: 0.82em;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.smcal-expand-inner {
+    max-height: calc(1.4em * 8);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Fade-out only when content is actually truncated */
+.smcal-expand-inner.smcal-truncated::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1.4em;
+    background: linear-gradient(transparent, #fff);
+    pointer-events: none;
+}
+
+.smcal-expand-meta {
+    font-size: 0.88em;
+    margin-bottom: 2px;
+}
+
+/* ---- Event form ---- */
+.smcal-form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fff;
+    color: black;
+}
+
+.smcal-form > .app-header {
+    text-align: center;
+}
+
+.smcal-form > .app-header h3 {
+    font-size: 1em;
+    letter-spacing: 0.03em;
+    margin: 4px 0;
+    text-align: center;
+    width: 100%;
+}
+
+.smcal-form-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 10px 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.smcal-fg { margin-bottom: 10px; }
+.smcal-fl { font-weight: 600; font-size: 0.82em; opacity: 0.8; }
+
+.smcal-form-body input[type="text"],
+.smcal-form-body textarea,
+.smcal-form-body select {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-light, #ccc);
+    border-radius: 4px;
+    padding: 5px 7px;
+    font-size: 0.92em;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+
+.smcal-form-body input[type="text"]:focus,
+.smcal-form-body textarea:focus,
+.smcal-form-body select:focus {
+    border-color: var(--smcal-accent, #4a9eff);
+    outline: none;
+}
+
+.smcal-form-body textarea {
+    resize: vertical;
+    min-height: 3em;
+}
+
+/* Memo group fills remaining space in form */
+.smcal-memo-fg {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.smcal-memo-fg textarea {
+    flex: 1;
+}
+
+/* Time row should never wrap */
+.smcal-time-rows .smcal-inline {
+    flex-wrap: nowrap;
+}
+
+.smcal-inline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.smcal-inline label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.smcal-time-in {
+    width: 3em;
+    text-align: center;
+    padding: 4px 2px;
+    border: 1px solid var(--color-border-light, #ccc);
+    border-radius: 4px;
+    font-size: 0.92em;
+}
+
+.smcal-time-in:focus {
+    border-color: var(--smcal-accent, #4a9eff);
+    outline: none;
+}
+
+.smcal-cat-sel {
+    font-size: 0.92em;
+    min-width: 100px;
+    width: auto;
+    border: 1px solid var(--color-border-light, #ccc);
+    border-radius: 4px;
+    padding: 4px 6px;
+    background: #fff;
+    color: black;
+}
+
+.smcal-form-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 10px;
+    border-top: 1px solid var(--color-border-light, #ddd);
+}
+
+.smcal-form-foot button {
+    padding: 5px 16px;
+    border-radius: 4px;
+    font-size: 0.88em;
+    cursor: pointer;
+    border: 1px solid var(--color-border-light, #ccc);
+    background: #fff;
+    transition: background 0.15s;
+}
+
+.smcal-form-foot .save-btn {
+    background: var(--smcal-accent, #4a9eff);
+    color: #fff;
+    border-color: var(--smcal-accent, #4a9eff);
+    font-weight: 600;
+}
+
+.smcal-form-foot .save-btn:hover {
+    filter: brightness(1.1);
+}
+
+.smcal-form-foot .cancel-btn:hover {
+    background: var(--color-border-light, #eee);
+}
+
+/* Delete button sits on the left so it can't be confused with Save.
+   Explicitly match the sizing of Cancel/Save (defeats smartphone-widget's global
+   .delete-btn style that would otherwise apply a full-width red pill). */
+.smcal-form-foot .smcal-form-delete {
+    margin-right: auto;
+    padding: 5px 12px;
+    font-size: 0.88em;
+    border-radius: 4px;
+    border: 1px solid rgba(185, 0, 0, 0.35);
+    background: transparent;
+    color: #b90000;
+    width: auto;
+    font-weight: normal;
+    cursor: pointer;
+}
+.smcal-form-foot .smcal-form-delete:hover {
+    background: rgba(185, 0, 0, 0.08);
+}
+
+/* ---- Color picker ---- */
+.smcal-colors { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.smcal-copt {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.smcal-copt.selected { border-color: var(--color-text-dark, #333); }
+.smcal-copt .fa-check { color: #fff; font-size: 0.55em; }
+
+/* ---- GM controls (standalone mode) ----
+   Self-contained button style. Does NOT inherit from .smcal-tb so it isn't fighting
+   the 25x25 day-header toolbar constraints. */
+.smartphone-frame .calendar-app .smcal-gm-ctrls {
+    padding: 6px 6px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.smcal-gm-section {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 6px;
+    background: rgba(0,0,0,0.02);
+    overflow: hidden;
+}
+.smcal-gm-section > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 5px 8px;
+    font-size: 0.82em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+}
+.smcal-gm-section > summary::-webkit-details-marker { display: none; }
+.smcal-gm-section > summary::after {
+    content: '\f078';
+    font-family: 'Font Awesome 6 Free', 'FontAwesome', sans-serif;
+    font-weight: 900;
+    font-size: 0.7em;
+    margin-left: auto;
+    color: rgba(0,0,0,0.4);
+    transition: transform 0.15s;
+}
+.smcal-gm-section[open] > summary::after { transform: rotate(180deg); }
+.smcal-gm-section > summary:hover { background: rgba(0,0,0,0.04); }
+.smcal-gm-body {
+    padding: 6px 8px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+/* Universal button — matches the look of our settings dropdowns and form buttons */
+.smartphone-frame .calendar-app .smcal-gm-btn {
+    all: unset;
+    cursor: pointer;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 8px;
+    font-size: 0.8em;
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 4px;
+    line-height: 1.2;
+    transition: background 0.15s, border-color 0.15s;
+}
+.smartphone-frame .calendar-app .smcal-gm-btn:hover {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.25);
+}
+.smartphone-frame .calendar-app .smcal-gm-btn:active {
+    background: rgba(0,0,0,0.08);
+}
+.smartphone-frame .calendar-app .smcal-gm-btn i { color: #555; }
+
+/* Shortcut row: 4 equal columns, icon on top */
+.smcal-gm-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+.smartphone-frame .calendar-app .smcal-gm-short {
+    flex-direction: column;
+    padding: 5px 2px;
+    gap: 2px;
+    font-size: 0.72em;
+}
+.smartphone-frame .calendar-app .smcal-gm-short i { font-size: 1em; }
+.smartphone-frame .calendar-app .smcal-gm-setdate,
+.smartphone-frame .calendar-app .smcal-gm-lighting {
+    width: 100%;
+}
+.smartphone-frame .calendar-app .smcal-gm-lighting.smcal-gm-active {
+    background: rgba(252, 196, 25, 0.18);
+    border-color: rgba(252, 196, 25, 0.5);
+}
+.smartphone-frame .calendar-app .smcal-gm-lighting.smcal-gm-active i { color: #b5770a; }
+
+/* Advance row: chevrons + unit select */
+.smcal-gm-advance {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+}
+.smartphone-frame .calendar-app .smcal-gm-nav {
+    flex: 0 0 auto;
+    padding: 5px 7px;
+    min-width: 28px;
+}
+.smcal-gm-unit {
+    flex: 1;
+    min-width: 0;
+    padding: 3px 6px;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 4px;
+    font-size: 0.8em;
+    background: #fff;
+}
+
+/* "None" color option — means "use the category's color (or default)" */
+.smcal-copt.smcal-copt-none {
+    background: #fff;
+    border: 2px dashed rgba(0,0,0,0.35);
+}
+.smcal-copt.smcal-copt-none .fa-ban { color: rgba(0,0,0,0.45); font-size: 0.7em; }
+.smcal-copt.smcal-copt-none .fa-check { font-size: 0.65em; }
+
+/* ---- Pinned view ---- */
+.smcal-pinned-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #fff;
+    color: black;
+}
+
+.smcal-pinned-view > .app-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    position: relative;
+    min-height: 28px;
+}
+
+.smcal-pinned-view > .app-header > h3 {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+}
+
+/* Back button in pinned view */
+.smartphone-frame .calendar-app .smcal-pinned-view .back-btn {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: transparent;
+    color: black;
+    font-size: 0.85em;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+.smartphone-frame .calendar-app .smcal-pinned-view .back-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: black;
+}
+
+/* Tabs — file-folder effect: each tab has its own color. The active tab's color is
+   shared by the search row and note list below it, so they read as one "folder".
+   Inactive tabs show their own (muted) color as a peeking label. */
+/* Tab palette — equal-saturation pastels (~95% lightness active, ~82% muted).
+   All hsl() so hue is the only thing that varies across tabs. */
+.smartphone-frame .calendar-app.smcal-pinned-view {
+    --smcal-events-bg:      hsl(210, 65%, 94%);
+    --smcal-events-mute:    hsl(210, 30%, 82%);
+    --smcal-recurring-bg:   hsl(270, 55%, 94%);
+    --smcal-recurring-mute: hsl(270, 25%, 82%);
+    --smcal-pinned-bg:      hsl(  0, 60%, 94%);
+    --smcal-pinned-mute:    hsl(  0, 30%, 82%);
+    --smcal-settings-bg:    hsl(210, 15%, 93%);
+    --smcal-settings-mute:  hsl(210,  8%, 80%);
+    --smcal-active-bg:      #f5f5f5;
+}
+.smartphone-frame .calendar-app.smcal-pinned-view.smcal-tab-active-events      { --smcal-active-bg: var(--smcal-events-bg); }
+.smartphone-frame .calendar-app.smcal-pinned-view.smcal-tab-active-recurring   { --smcal-active-bg: var(--smcal-recurring-bg); }
+.smartphone-frame .calendar-app.smcal-pinned-view.smcal-tab-active-pinned      { --smcal-active-bg: var(--smcal-pinned-bg); }
+.smartphone-frame .calendar-app.smcal-pinned-view.smcal-tab-active-settings    { --smcal-active-bg: var(--smcal-settings-bg); }
+
+/* Flat body background — very light grey. Active tab identity comes from a colored
+   flair strip on the tab itself (see below), not a tinted body. */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-pinned-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: #f5f5f5;
+}
+/* Remove the default app-header background and divider so the gradient shows through */
+/* Align all header children (back button, tabs) to the bottom so the tab base
+   sits flush with the body wrapper — no hairline gap. min-height:0 keeps the
+   header from reserving extra space when content is shorter than the default. */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-pinned-hdr.app-header {
+    background: transparent;
+    border-bottom: none;
+    padding: 4px 6px 0;
+    align-items: flex-end;
+    min-height: 0;
+}
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-pinned-hdr {
+    padding-bottom: 0;
+    gap: 4px;
+}
+.smcal-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    flex: 1;
+    align-items: flex-end;
+    min-width: 0;
+}
+/* Tab body — neutral light-grey. Identity is expressed via a colored flair strip
+   on the top edge (see ::before block below). */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab {
+    all: unset;
+    position: relative;
+    cursor: pointer;
+    padding: 6px 10px 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    color: rgba(0,0,0,0.5);
+    background: #f5f5f5;
+    box-sizing: border-box;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+}
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="settings"] { padding: 6px 8px 4px; }
+
+/* Colored flair strip. Inactive tabs get a thin muted version; active tab gets
+   a thicker saturated version. */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab.smcal-faded::before {
+    height: 2px;
+    opacity: 0.6;
+}
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="events"]::before    { background: var(--smcal-events-mute); }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="recurring"]::before { background: var(--smcal-recurring-mute); }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="pinned"]::before    { background: var(--smcal-pinned-mute); }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="settings"]::before  { background: var(--smcal-settings-mute); }
+
+/* Active tab: saturated flair + darker text */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab:not(.smcal-faded) { color: black; }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="events"]:not(.smcal-faded)::before    { background: hsl(210, 70%, 55%); }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="recurring"]:not(.smcal-faded)::before { background: hsl(270, 55%, 55%); }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="pinned"]:not(.smcal-faded)::before    { background: hsl(  0, 60%, 55%); }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="settings"]:not(.smcal-faded)::before  { background: hsl(210, 12%, 45%); }
+
+/* Hover darkens the tab body slightly */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab:hover {
+    background: #ececec;
+    color: rgba(0,0,0,0.85);
+}
+
+/* Active tab (no smcal-faded class) — uses its own full color, merging with the content */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="events"]:not(.smcal-faded)    { background: var(--smcal-events-bg);    color: black; }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="recurring"]:not(.smcal-faded) { background: var(--smcal-recurring-bg); color: black; }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="pinned"]:not(.smcal-faded)    { background: var(--smcal-pinned-bg);    color: black; }
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-tab[data-tab="settings"]:not(.smcal-faded)  { background: var(--smcal-settings-bg);  color: black; }
+
+/* Search row sits on the pinned-view gradient; note container is plain white */
+.smcal-search-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 6px;
+}
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-search-row,
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-main.smcal-note-container {
+    background: transparent;
+}
+.smartphone-frame .calendar-app .smcal-search {
+    flex: 1;
+    box-sizing: border-box;
+    border: 1px solid var(--color-border-light, #ccc);
+    border-radius: 4px;
+    padding: 4px 7px;
+    font-size: 0.88em;
+    background: #fff;
+    color: black;
+    transition: border-color 0.15s;
+}
+.smartphone-frame .calendar-app .smcal-search:focus {
+    border-color: var(--smcal-accent, #4a9eff);
+    outline: none;
+}
+
+/* Settings tab body */
+.smartphone-frame .calendar-app.smcal-pinned-view .smcal-settings-body {
+    padding: 10px 12px;
+    overflow-y: auto;
+}
+.smcal-setting {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.smcal-setting:last-child { border-bottom: none; }
+.smcal-setting-label {
+    font-size: 0.88em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.smartphone-frame .calendar-app .smcal-padlock {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.75em;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+}
+.smartphone-frame .calendar-app .smcal-padlock:hover { opacity: 1; }
+.smartphone-frame .calendar-app .smcal-padlock .fa-lock { color: #b5770a; opacity: 1; }
+.smcal-padlock-indicator {
+    font-size: 0.7em;
+    opacity: 0.4;
+}
+.smcal-setting-control {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center;
+    font-size: 0.85em;
+}
+.smcal-setting-opt {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+.smcal-setting-select,
+.smcal-setting-input {
+    padding: 3px 6px;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.95em;
+}
+.smcal-setting-input {
+    flex: 1;
+    min-width: 0;
+    font-family: monospace;
+}
+.smcal-setting-hint {
+    font-size: 0.7em;
+    color: #555;
+    line-height: 1.35;
+    margin-top: 4px;
+    word-spacing: 0.15em;
+}
+
+/* Categories UI (standalone mode) */
+.smcal-setting-pill {
+    display: inline-block;
+    font-size: 0.7em;
+    font-weight: normal;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.1);
+    color: #555;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+.smcal-setting-categories.smcal-setting-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+.smcal-cat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 4px 0;
+}
+.smcal-cat-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.smcal-cat-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.75em;
+    flex-shrink: 0;
+}
+.smcal-cat-name { flex: 1; min-width: 0; padding: 3px 6px; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.85em; }
+.smcal-cat-color { width: 26px; height: 24px; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px; padding: 0; background: transparent; cursor: pointer; flex-shrink: 0; }
+.smcal-cat-icon-in { width: 90px; padding: 3px 6px; border: 1px solid rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.8em; font-family: monospace; flex-shrink: 0; }
+.smartphone-frame .calendar-app .smcal-cat-add {
+    margin-top: 4px;
+    padding: 4px 10px;
+    font-size: 0.8em;
+    width: auto;
+}
+.smcal-setting-hint code {
+    display: inline-block;
+    background: rgba(0,0,0,0.08);
+    padding: 0 3px;
+    border-radius: 2px;
+    font-size: 1em;
+    margin-right: 1px;
+    white-space: nowrap;
+}
+
+/* All-notes date group header */
+.smcal-allnote-date {
+    font-size: 0.78em;
+    font-weight: 600;
+    opacity: 0.55;
+    padding: 6px 4px 2px;
+}
+.smcal-allnote-date.smcal-ended-header {
+    opacity: 0.7;
+    font-style: italic;
+    border-top: 1px dashed rgba(0,0,0,0.25);
+    margin-top: 8px;
+}
+
+/* ================================================================
+   "Golden Squares" Theme
+   Applied when .calendar-app has .smcal-theme-golden-squares
+   ================================================================ */
+
+/* Design tokens — scoped to this theme */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares {
+    --gs-accent-bright:   #FFE900;
+    --gs-accent-mid:      #FFB800;
+    --gs-accent-deep:     #FFA500;
+    --gs-hover-gradient:  linear-gradient(135deg, var(--gs-accent-bright) 0%, var(--gs-accent-mid) 50%, var(--gs-accent-deep) 100%);
+    --gs-accent-glow:     0 4px 8px rgba(255, 184, 0, 0.3);
+    --gs-surface-light:   #fbfbfb;
+    --gs-text-primary:    #3f464e;
+    --gs-font-weight-med: 550;
+    --gs-shadow-sm:       0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Buttons — header (today, pin badge, nav arrows, pinned-view back) */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .today-btn.smcal-today-btn,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-pin-badge,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .calendar-header .nav-btn,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-pinned-view .back-btn {
+    background-color: var(--gs-surface-light);
+    color: var(--gs-text-primary);
+    font-weight: var(--gs-font-weight-med) !important;
+    box-shadow: var(--gs-shadow-sm);
+    border-radius: 6px;
+}
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .today-btn.smcal-today-btn:hover,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-pin-badge:hover,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .calendar-header .nav-btn:hover,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-pinned-view .back-btn:hover {
+    background: var(--gs-hover-gradient);
+    border-color: var(--gs-accent-mid);
+    box-shadow: var(--gs-accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* Toolbar buttons (sort, compact, add, delete-all) */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-day-hdr .smcal-tb {
+    background-color: var(--gs-surface-light);
+    color: var(--gs-text-primary);
+    font-weight: var(--gs-font-weight-med) !important;
+    box-shadow: var(--gs-shadow-sm);
+    border-radius: 6px;
+}
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-day-hdr .smcal-tb:hover {
+    background: var(--gs-hover-gradient);
+    border-color: var(--gs-accent-mid);
+    box-shadow: var(--gs-accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* Note action buttons (pin, edit, delete, open) */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-note button.smcal-act {
+    background-color: var(--gs-surface-light);
+    color: var(--gs-text-primary);
+    font-weight: var(--gs-font-weight-med) !important;
+    box-shadow: var(--gs-shadow-sm);
+    border-radius: 6px;
+}
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-note button.smcal-act:hover {
+    background: var(--gs-hover-gradient);
+    border-color: var(--gs-accent-mid);
+    box-shadow: var(--gs-accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* Form buttons (save, cancel) */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-form-foot button {
+    background-color: var(--gs-surface-light);
+    color: var(--gs-text-primary);
+    font-weight: var(--gs-font-weight-med) !important;
+    box-shadow: var(--gs-shadow-sm);
+    border-radius: 6px;
+}
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-form-foot button:hover {
+    background: var(--gs-hover-gradient);
+    border-color: var(--gs-accent-mid);
+    box-shadow: var(--gs-accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* Pinned view action buttons (back, unpin-all, delete-all). The pinned view now shares
+   its root element with .calendar-app, so we match both patterns. */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares.smcal-pinned-view .smcal-tb,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-pinned-view .smcal-tb {
+    background-color: var(--gs-surface-light);
+    color: var(--gs-text-primary);
+    font-weight: var(--gs-font-weight-med) !important;
+    box-shadow: var(--gs-shadow-sm);
+    border-radius: 6px;
+}
+.smartphone-frame .calendar-app.smcal-theme-golden-squares.smcal-pinned-view .smcal-tb:hover,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-pinned-view .smcal-tb:hover {
+    background: var(--gs-hover-gradient);
+    border-color: var(--gs-accent-mid);
+    box-shadow: var(--gs-accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* Search input */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-search {
+    background-color: var(--gs-surface-light);
+    color: var(--gs-text-primary);
+    box-shadow: var(--gs-shadow-sm);
+    border-radius: 6px;
+}
+.smartphone-frame .calendar-app.smcal-theme-golden-squares .smcal-search:focus {
+    border-color: var(--gs-accent-mid);
+    box-shadow: var(--gs-accent-glow);
+}
+
+/* Headings */
+.smartphone-frame .calendar-app.smcal-theme-golden-squares h3,
+.smartphone-frame .calendar-app.smcal-theme-golden-squares h4 {
+    font-family: "Roboto Slab", Arial, sans-serif;
+}

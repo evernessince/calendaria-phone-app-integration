@@ -1,39 +1,52 @@
 {
-    "id": "calendaria-phone-app",
-    "title": "Smartphone Widget – Calendaria Integration",
-    "version": "0.1.0",
-    "description": "Replaces the built-in Smartphone Widget calendar app with a full Calendaria integration.",
-    "compatibility": {
-        "minimum": "13",
-        "verified": "13"
-    },
-    "authors": [
-        {
-            "name": "Evernessince",
-            "flags": {}
-        }
+  "id": "calendaria-phone-app",
+  "title": "Smartphone Calendar Plus",
+  "version": "0.2.0",
+  "description": "<p>Replaces the built-in Smartphone Widget calendar app with a richer calendar — notes, events, sorting, search pinning, enahnced event editing, theming, and many usability improvements. Optionally integrates with Calendaria and syncs time, date, calendar days / months / years, and events / notes.</p>",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Evernessince",
+      "flags": {}
+    }
+  ],
+  "socket": true,
+  "esmodules": [
+    "scripts/main.mjs"
+  ],
+  "styles": [
+    {
+      "src": "styles/calendar.css"
+    }
+  ],
+  "relationships": {
+    "requires": [
+      {
+        "id": "smartphone-widget",
+        "type": "module",
+        "compatibility": {}
+      }
     ],
-    "esmodules": [
-        "scripts/main.mjs"
-    ],
-    "flags": {},
-    "relationships": {
-        "requires": [
-            {
-                "id": "smartphone-widget",
-                "type": "module"
-            },
-            {
-                "id": "calendaria",
-                "type": "module"
-            }
-        ]
-    },
-    "languages": [
-        {
-            "lang": "en",
-            "name": "English",
-            "path": "lang/en.json"
-        }
+    "recommends": [
+      {
+        "id": "calendaria",
+        "type": "module",
+        "reason": "Enables fantasy-calendar support and integration with Calendaria-owned notes.",
+        "compatibility": {}
+      }
     ]
+  },
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
+    }
+  ],
+  "url": "https://github.com/evernessince/smartphone-calendar-plus",
+  "flags": {}
 }
