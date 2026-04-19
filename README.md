@@ -1,6 +1,6 @@
 # Smartphone Calendar Plus
 
-A feature-rich calendar replacement for the [Smartphone Widget](https://foundryvtt.com/packages/smartphone-widget) module in Foundry VTT. Optionally integrates with [Calendaria](https://github.com/Sayshal/Calendaria) for fantasy calendar support, syncing time, date, weather, and notes between systems.
+A feature-rich calendar replacement for the [Smartphone Widget](https://foundryvtt.com/packages/smartphone-widget) Calendar App in Foundry VTT. Optionally integrates with [Calendaria](https://github.com/Sayshal/Calendaria) for fantasy calendar support, syncing time, date, weather, and notes between systems.
 
 Works as a standalone Gregorian calendar without Calendaria installed.
 
@@ -18,15 +18,27 @@ Works as a standalone Gregorian calendar without Calendaria installed.
 
 ## Features
 
-### Calendar
+<img width="358" height="782" alt="{1EC0F318-3F85-408D-AD86-9B67B28E69BA}" src="https://github.com/user-attachments/assets/db996edb-dd06-4a4d-a239-b97dbc833f4f" />
+<img width="367" height="735" alt="{07317EC3-33F1-4663-AD3D-3A1CF885B554}" src="https://github.com/user-attachments/assets/0c828866-11fa-4462-8220-ca26976e762b" />
+<img width="367" height="731" alt="{9AF5AA76-9557-442F-B6F9-E01423D6597C}" src="https://github.com/user-attachments/assets/7d301cd8-bbcd-4b83-983f-fe39cad18019" />
 
-- Monthly grid view pulled from your active calendar system (Gregorian or any Calendaria-supported calendar)
-- Day cells show colored dot indicators: blue for regular events, purple for recurring occurrences, both when a day has both types
-- Click any day to see its events in the detail panel below the grid
-- Navigate months with arrow buttons or the scroll wheel on the month/year fields
-- Click the month name to pick from a dropdown; click the year to type a new one
-- Today button jumps back to the current in-world date
-- Keyboard arrow keys move the selected date (left/right by day, up/down by week)
+As this is intended to replace the default Calendar app, I will list new features here:
+
+- FUll Calendaria integration. Syncs the calendar (day names, month names, days per week, days per month, and the current date), Notes (name, description, category, color), and weather.
+- Monthly grid view pulled from your active calendar system (Gregorian or Calendaria).  
+- Displays Calendaria notes on the Smartphoe Calendar app and enables you to open them from the smartphone.
+- Respects note visibility from Calendaria (do note that there is currently a bug in calendaria when attempting to change note visibility permissions.  Until fixed I recommend controlling note visibility via the visibility setting).
+- Added sorting and interface spacing buttons.
+- Expanding notes.  Click on notes to expand them, revealing note contents and other useful information.
+- Added the ability to pin notes.
+- Added an all notes screen that has tabs for all notes, recurring events, and pinned notes / events.
+- Added a settings tab to the all notes screen.
+- Past events on the current day appear grayed out.
+- Visual ticks to indicate events.  Blue for regular events and purple for recurring events.
+- Right clicking on a date as GM sets that day as the current day.
+- Month and year and be clicked or scrolled to change the viewed date.
+- Added keyboard shortcuts.  Keyboard arrow keys move the selected date when phone is focused (reconfigurable in the controls setting menu), mouse wheel over year / month changes their value, esc key acts as a go back button when the phone is focused.
+- Added a setting to the main phone settings to force enable home button on all players (useful for GMs that want to ensure a consitent experience across players and avoid having addition setup steps for them).
 
 ### Events and Notes
 
@@ -104,8 +116,8 @@ The phone's status bar clock stays in sync with Calendaria's world time through 
 
 ### Per-Phone Storage
 
-- Phone-native events are stored per phone, not per player
-- Pinned notes are stored per phone and shared across all clients (world-scoped)
+- Phone-native events are stored per phone
+- Pinned notes are stored per phone
 - Event writes route through the original module's socket handlers for cross-client sync
 
 ## Changelog
